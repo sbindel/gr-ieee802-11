@@ -17,7 +17,13 @@ parameters:
     default: 'False'
     options: ['True', 'False']
     option_labels: [Enable, Disable]
-
+-   id: corrupted
+    label: Corrupted
+    dtype: bool
+    default: 'False'
+    options: ['True', 'False']
+    option_labels: [Enable, Disable]
+    
 inputs:
 -   domain: stream
     dtype: byte
@@ -30,6 +36,6 @@ outputs:
 
 templates:
     imports: import ieee802_11
-    make: ieee802_11.decode_mac(${log}, ${debug})
+    make: ieee802_11.decode_mac(${log}, ${debug}, ${corrupted})
 
 file_format: 1

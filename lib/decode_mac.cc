@@ -29,7 +29,7 @@ using namespace gr::ieee802_11;
 class decode_mac_impl : public decode_mac {
 
 public:
-decode_mac_impl(bool log, bool debug) :
+decode_mac_impl(bool log, bool debug, bool corrupted) :
 	block("decode_mac",
 			gr::io_signature::make(1, 1, 48),
 			gr::io_signature::make(0, 0, 0)),
@@ -40,7 +40,8 @@ decode_mac_impl(bool log, bool debug) :
 	d_freq_offset(0.0),
 	d_ofdm(BPSK_1_2),
 	d_frame(d_ofdm, 0),
-	d_frame_complete(true) {
+	d_frame_complete(true),
+	d_pass_corrupted(corrupted) {
 
 	message_port_register_out(pmt::mp("out"));
 }
@@ -134,8 +135,13 @@ void decode() {
 	boost::crc_32_type result;
 	result.process_bytes(out_bytes + 2, d_frame.psdu_size);
 	if(result.checksum() != 558161692) {
-		dout << "checksum wrong -- dropping" << std::endl;
-		return;
+		if (!d_pass_corrupted){
+			dout << "checksum wrong -- dropping" << std::endl;
+			return;
+		}
+		else {
+			dout << "checksum wrong -- passing" << std::endl;
+		}
 	}
 
 	mylog(boost::format("encoding: %1% - length: %2% - symbols: %3%")
@@ -239,9 +245,10 @@ private:
 
 	int copied;
 	bool d_frame_complete;
+	bool d_pass_corrupted;
 };
 
 decode_mac::sptr
-decode_mac::make(bool log, bool debug) {
-	return gnuradio::get_initial_sptr(new decode_mac_impl(log, debug));
+decode_mac::make(bool log, bool debug, bool corrupted) {
+	return gnuradio::get_initial_sptr(new decode_mac_impl(log, debug, corrupted));
 }
